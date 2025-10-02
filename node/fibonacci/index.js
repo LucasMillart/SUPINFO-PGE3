@@ -1,3 +1,11 @@
+import { parseArgs } from 'node:util';
+
+const [, , operation, ...args] = process.argv;
+const numbers = args.map(Number);
+
+console.log(operation)
+console.log(numbers)
+
 export function fibonacci(n)
 {
   let fibo = [0, 1];
@@ -8,19 +16,16 @@ export function fibonacci(n)
   return fibo[n];
 }
 
-export function add(a, b)
+export function add(nums)
 {
-  return a + b;
+  return nums.reduce((a, b) => a + b);
 }
 
-export function divide(a, b)
+export function divide(nums)
 {
-  return a / b;
+  return nums.reduce((a, b) => a / b);
 }
 
-console.log(fibonacci(0))
-console.log(fibonacci(1))
-console.log(fibonacci(2))
-console.log(fibonacci(3))
-console.log(fibonacci(4))
-console.log(fibonacci(5))
+const operations = { add, divide };
+
+console.log(operations[operation](numbers))
