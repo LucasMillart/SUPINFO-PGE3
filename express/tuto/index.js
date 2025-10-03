@@ -1,17 +1,24 @@
 const express = require('express');
+const path = require('path');
 const app = express();
+const todoRoutes = require('./routes/todos');
 
-app.get('/', (req, res) =>
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+app.use('/todos', todoRoutes);
+
+app.get('/index', (req, res) =>
 {
-  res.send("Bienvenue");
+  res.sendFile(path.join(__dirname, 'public/index.html'));
 });
 
-app.get('/contact', (req, res) =>
+app.get('/form', (req, res) =>
 {
-  res.send("Contact!");
+  res.sendFile(path.join(__dirname, 'public/form.html'));
 })
 
 app.listen(3000, () =>
 {
-  console.log("le serveur tourne sur localhost:3000")
-})
+  console.log("🚀 Serveur lancé sur http://localhost:3000");
+});

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><title>Mes Todos</title></head>
+<body>
+  <h1>📋 Liste des todos</h1>
+  <ul id="todo-list"></ul>
+  <a href="form"><button>Create todos</button></a>
+
+  <script>
+    fetch('/todos')
+      .then(res => res.json())
+      .then(data => {
+        const ul = document.getElementById('todo-list');
+        data.forEach((todo, i) => {
+          const li = document.createElement('li');
+          li.textContent = `${i + 1}. ${todo}`;
+          ul.appendChild(li);
+        });
+      });
+  </script>
+</body>
+</html>
