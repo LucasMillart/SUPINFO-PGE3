@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Todo Express</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, button { margin: 5px; }
+    ul { list-style: none; padding: 0; }
+    li { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>Mes Todos</h1>
+
+  <input type="text" id="taskInput" placeholder="Nouvelle tâche">
+  <button onclick="addTodo()">Ajouter</button>
+
+  <ul id="todoList"></ul>
+
+  <script>
+    const API_URL = 'http://localhost:3000/todos';
+
+    async function fetchTodos() {
+      const res = await fetch(API_URL);
+      const todos = await res.json();
+      const list = document.getElementById('todoList');
+      list.innerHTML = '';
+      todos.forEach(todo => {
+        const li = document.createElement('li');
+        li.textContent = `${todo.task} ${todo.done ? '✅' : '❌'}`;
+
+        if (!todo.done) {
+          const validateBtn = document.createElement('button');
+          validateBtn.textContent = 'Valider';
+          validateBtn.onclick = () => validateTodo(todo.id);
+          li.appendChild(validateBtn);
+        }
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Supprimer';
+        delBtn.onclick = () => deleteTodo(todo.id);
+        li.appendChild(delBtn);
+
+        list.appendChild(li);
+      });
+    }
+
+    async function addTodo() {
+      const task = document.getElementById('taskInput').value;
+      if (!task) return alert('Entrez une tâche');
+      await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task, done: false })
+      });
+      document.getElementById('taskInput').value = '';
+      fetchTodos();
+    }
+
+    async function deleteTodo(id) {
+      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+      fetchTodos();
+    }
+
+    async function validateTodo(id) {
+      await fetch(`${API_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ done: true })
+      });
+      fetchTodos();
+    }
+
+    fetchTodos();
+  </script>
+</body>
+</html>
