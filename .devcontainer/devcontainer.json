@@ -1,5 +1,10 @@
 {
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "workspaceFolder": "3APIS",
-  "features": {}
+  "name": "Node.js + Python",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20", 
+  
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "latest"   // installe la dernière version stable de Python
+    }
+  }
 }
