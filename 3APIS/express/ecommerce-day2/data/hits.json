@@ -1,0 +1,14 @@
+{
+  "hits": {
+    "GET /f": 1,
+    "GET /": 19,
+    "GET /api/products": 34,
+    "OPTIONS /api/cart": 6,
+    "OPTIONS /api/products": 4,
+    "GET /api/cart": 20,
+    "POST /api/products": 5,
+    "POST /api/cart/add": 6,
+    "DELETE /api/cart/1": 2,
+    "DELETE /api/product1": 1
+  }
+}

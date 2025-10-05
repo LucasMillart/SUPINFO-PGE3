@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Shop</title>
+    <style>
+        body { max-width: 800px; margin: 20px auto; font-family: Arial; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+        .card { border: 1px solid #ddd; padding: 10px; }
+        button { background: #007bff; color: white; border: none; padding: 5px 10px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+    <div>
+        <input id="nom" placeholder="Nom">
+        <input type="number" id="prix" placeholder="Prix">
+        <input type="number" id="stock" placeholder="Stock">
+        <button onclick="add()">+</button>
+    </div>
+
+    <div id="products" class="grid"></div>
+    <div id="cart"></div>
+
+    <script>
+        const api = {
+            call: async (url, opts = {}) => {
+                const res = await fetch('/api' + url, {
+                    ...opts,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': opts.admin ? 'admin' : 'user',
+                        'user-id': '123'
+                    }
+                });
+                return res.json();
+            }
+        };
+
+        const refresh = () => {
+            api.call('/products').then(products => {
+                document.getElementById('products').innerHTML = products.map(p => `
+                    <div class="card">
+                        <h3>${p.name}</h3>
+                        <p>${p.price}€ - Stock: ${p.stock}</p>
+                        <button onclick="addToCart(${p.id})" ${p.stock < 1 ? 'disabled' : ''}>
+                            ${p.stock < 1 ? 'Rupture' : 'Acheter'}
+                        </button>
+                    </div>
+                `).join('');
+            });
+
+            api.call('/cart').then(cart => {
+                document.getElementById('cart').innerHTML = cart.length 
+                    ? `<h2>Panier</h2>${cart.map(i => 
+                        `<div>${i.name} (${i.quantity}) - ${i.price}€ 
+                         <button onclick="remove(${i.productId})">×</button></div>`
+                      ).join('')}`
+                    : '<h2>Panier vide</h2>';
+            });
+        };
+
+        const add = () => api.call('/products', {
+            method: 'POST',
+            admin: true,
+            body: JSON.stringify({
+                name: document.getElementById('nom').value,
+                price: +document.getElementById('prix').value,
+                stock: +document.getElementById('stock').value
+            })
+        }).then(refresh);
+
+        const addToCart = id => api.call('/cart/add', {
+            method: 'POST',
+            body: JSON.stringify({ productId: id, quantity: 1 })
+        }).then(refresh);
+
+        const remove = id => api.call(`/cart/${id}`, {
+            method: 'DELETE',
+            admin: true
+        }).then(refresh);
+
+        refresh();
+    </script>
+</body>
+</html>
