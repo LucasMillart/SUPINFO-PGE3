@@ -1,10 +1,14 @@
 {
   "name": "Node.js + Python",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20", 
-  
+
   "features": {
     "ghcr.io/devcontainers/features/python:1": {
-      "version": "latest"   // installe la dernière version stable de Python
+      "version": "3.12"
     }
-  }
+  },
+
+  "postCreateCommand": "npm install",
+
+  "workspaceFolder": "/workspaces/SUPINFO-PGE3"
 }
