@@ -3,9 +3,13 @@ const app = express();
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const { userAuth } = require("./middleware/auth");
+const logger = require("./middleware/test");
 
 app.use(express.json());
 app.use(express.static('public'));
+
+app.use(logger);
+
 app.use((req, res, next) =>
 {
   res.header('Access-Control-Allow-Origin', '*');
