@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Connexion ou création d'utilisateur</title>
+</head>
+<body>
+  <h2>Créer un utilisateur</h2>
+  <form id="createForm">
+    <label for="newUserId">Nouvel ID utilisateur :</label>
+    <input type="text" id="newUserId" required>
+    <button type="submit">Créer</button>
+  </form>
+
+  <h2>Se connecter</h2>
+  <form id="loginForm">
+    <label for="loginUserId">ID utilisateur :</label>
+    <input type="text" id="loginUserId" required>
+    <button type="submit">Connexion</button>
+  </form>
+
+  <script>
+    // Création d'utilisateur
+    document.getElementById('createForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const userId = document.getElementById('newUserId').value;
+
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ _id: userId })
+      });
+
+      const result = await response.json();
+      alert('Utilisateur créé : ' + JSON.stringify(result));
+    });
+
+    // Connexion utilisateur
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const userId = document.getElementById('loginUserId').value;
+      localStorage.setItem('userId', 'lucas123');
+
+      const response = await fetch('/api/users', {
+        method: 'GET',
+        headers: { 'X-User-Id': userId }
+      });
+
+      const result = await response.json();
+      alert('Utilisateur connecté : ' + JSON.stringify(result));
+    });
+  </script>
+</body>
+</html>

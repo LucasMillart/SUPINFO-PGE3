@@ -2,13 +2,11 @@ const express = require('express');
 const app = express();
 const productRoutes = require('./routes/productRoutes');
 const cartRoutes = require('./routes/cartRoutes');
+const userRoutes = require("./routes/userRoutes");
 const { userAuth } = require("./middleware/auth");
-const logger = require("./middleware/test");
 
 app.use(express.json());
 app.use(express.static('public'));
-
-app.use(logger);
 
 app.use((req, res, next) =>
 {
@@ -18,8 +16,18 @@ app.use((req, res, next) =>
   req.method === 'OPTIONS' ? res.sendStatus(200) : next();
 });
 
+
 app.use('/api/products', productRoutes);
 app.use('/api/cart', cartRoutes);
-app.use('/api', userAuth);
+app.use('/api/users', userRoutes);
+
+// Gestion cas d'erreur
+app.use((req, res) =>
+{
+  res.status(404).send(`
+    <h1>Page non trouvé :)</h1>
+    `
+  )
+})
 
 app.listen(3000, () => console.log('Server running on port 3000'));

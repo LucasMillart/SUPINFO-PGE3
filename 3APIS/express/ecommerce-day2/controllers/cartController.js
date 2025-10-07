@@ -1,59 +1,124 @@
-const store = require('../models/store');
+const { client } = require('../config/database');
 
-exports.getCart = (req, res) =>
+exports.getCart = async (req, res) =>
 {
-  const userId = req.headers['user-id']; // Simuler l'authentification
-  if (!userId) return res.status(401).json({ message: "User ID requis" });
-
-  const cart = store.carts.get(userId) || [];
-  res.json(cart);
-};
-
-exports.addToCart = (req, res) =>
-{
-  const userId = req.headers['user-id'];
-  if (!userId) return res.status(401).json({ message: "User ID requis" });
-
-  const { productId, quantity = 1 } = req.body;
-  const product = store.products.find(p => p.id === parseInt(productId));
-
-  if (!product) return res.status(404).json({ message: "Produit non trouvé" });
-  if (product.stock < quantity) return res.status(400).json({ message: "Stock insuffisant" });
-
-  const cart = store.carts.get(userId) || [];
-  const cartItem = cart.find(item => item.productId === productId);
-
-  if (cartItem)
+  try
   {
-    cartItem.quantity += quantity;
-  } else
+    await client.connect();
+    const db = client.db("ecommerce");
+    const carts = db.collection("carts");
+
+    const userId = req.headers['user-id'] || req.headers['x-user-id'];
+    if (!userId) return res.status(401).json({ message: "User ID requis" });
+
+    const cart = await carts.findOne({ userId });
+    console.log(cart)
+    res.json(cart.items || []);
+  } catch (error)
   {
-    cart.push({ productId, quantity, name: product.name, price: product.price });
+    console.error('Erreur getCart :', error);
+    res.status(500).json({ error: error.message });
+  } finally
+  {
+    await client.close();
   }
-
-  product.stock -= quantity;
-  store.carts.set(userId, cart);
-
-  res.json(cart);
 };
 
-exports.removeFromCart = (req, res) =>
+exports.addToCart = async (req, res) =>
 {
-  const userId = req.headers['user-id'];
-  if (!userId) return res.status(401).json({ message: "User ID requis" });
+  try
+  {
+    await client.connect();
+    const database = client.db("ecommerce");
+    const carts = database.collection("carts");
+    const products = database.collection("products");
 
-  const { productId } = req.params;
-  const cart = store.carts.get(userId);
+    const userId = req.headers['user-id'];
+    if (!userId) return res.status(401).json({ message: "User ID requis" });
 
-  if (!cart) return res.status(404).json({ message: "Panier non trouvé" });
+    const { productId, quantity = 1 } = req.body;
 
-  const itemIndex = cart.findIndex(item => item.productId === parseInt(productId));
-  if (itemIndex === -1) return res.status(404).json({ message: "Produit non trouvé dans le panier" });
+    // Vérifier le produit
+    const product = await products.findOne({ _id: parseInt(productId) });
+    if (!product) return res.status(404).json({ message: "Produit non trouvé" });
+    if (product.stock < quantity) return res.status(400).json({ message: "Stock insuffisant" });
 
-  const item = cart[itemIndex];
-  const product = store.products.find(p => p.id === parseInt(productId));
-  product.stock += item.quantity;
+    // Mettre à jour ou créer le panier
+    const result = await carts.findOneAndUpdate(
+      { userId },
+      {
+        $push: {
+          items: {
+            productId,
+            quantity,
+            name: product.name,
+            price: product.price
+          }
+        }
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
 
-  cart.splice(itemIndex, 1);
-  res.json(cart);
+    // Mettre à jour le stock
+    await products.updateOne(
+      { _id: parseInt(productId) },
+      { $inc: { stock: -quantity } }
+    );
+
+    res.json(result.items || []);
+  } catch (error)
+  {
+    res.status(500).json({ error: error.message });
+  } finally
+  {
+    await client.close();
+  }
+};
+
+exports.removeFromCart = async (req, res) =>
+{
+  try
+  {
+    await client.connect();
+    const database = client.db("ecommerce");
+    const carts = database.collection("carts");
+    const products = database.collection("products");
+
+    const userId = req.headers['user-id'];
+    if (!userId) return res.status(401).json({ message: "User ID requis" });
+
+    const { productId } = req.params;
+
+    // Trouver le panier et l'item
+    const cart = await carts.findOne({ userId });
+    if (!cart) return res.status(404).json({ message: "Panier non trouvé" });
+
+    const itemToRemove = cart.items.find(item => item.productId === parseInt(productId));
+    if (!itemToRemove) return res.status(404).json({ message: "Produit non trouvé dans le panier" });
+
+    // Mettre à jour le stock
+    await products.updateOne(
+      { _id: parseInt(productId) },
+      { $inc: { stock: itemToRemove.quantity } }
+    );
+
+    // Supprimer l'item du panier
+    const result = await carts.findOneAndUpdate(
+      { userId },
+      {
+        $pull: {
+          items: { productId: parseInt(productId) }
+        }
+      },
+      { returnDocument: 'after' }
+    );
+
+    res.json(result.items || []);
+  } catch (error)
+  {
+    res.status(500).json({ error: error.message });
+  } finally
+  {
+    await client.close();
+  }
 };

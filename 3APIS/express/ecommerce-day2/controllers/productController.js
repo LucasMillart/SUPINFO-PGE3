@@ -1,35 +1,110 @@
-const store = require('../models/store');
+const { client } = require("../config/database");
 
-exports.getAllProducts = (req, res) => res.json(store.products);
-
-exports.getProductById = (req, res) =>
+exports.getAllProducts = async (req, res) =>
 {
-  const product = store.products.find(p => p.id === parseInt(req.params.id));
-  !product ? res.status(404).json({ error: "Non trouvé" }) : res.json(product);
+  try
+  {
+    await client.connect();
+    const database = client.db("ecommerce");
+    const products = database.collection("products");
+    const result = await products.find({}).toArray();
+    res.json(result);
+  } catch (error)
+  {
+    res.status(500).json({ error: error.message });
+  } finally
+  {
+    await client.close();
+  }
 };
 
-exports.createProduct = (req, res) =>
+exports.getProductById = async (req, res) =>
 {
-  const product = {
-    id: store.products.length + 1,
-    ...req.body
-  };
-  store.products.push(product);
-  res.status(201).json(product);
+  try
+  {
+    await client.connect();
+    const database = client.db("ecommerce");
+    const products = database.collection("products");
+    const product = await products.findOne({ _id: parseInt(req.params.id) });
+    if (!product)
+    {
+      return res.status(404).json({ error: "Non trouvé" });
+    }
+    res.json(product);
+  } catch (error)
+  {
+    res.status(500).json({ error: error.message });
+  } finally
+  {
+    await client.close();
+  }
 };
 
-exports.updateProduct = (req, res) =>
+exports.createProduct = async (req, res) =>
 {
-  const product = store.products.find(p => p.id === parseInt(req.params.id));
-  if (!product) return res.status(404).json({ error: "Non trouvé" });
-  Object.assign(product, req.body);
-  res.json(product);
+  try
+  {
+    await client.connect();
+    const database = client.db("ecommerce");
+    const products = database.collection("products");
+    const product = {
+      _id: Date.now(), // Génère un ID unique basé sur le timestamp
+      ...req.body
+    };
+    const result = await products.insertOne(product);
+    res.status(201).json(product);
+  } catch (error)
+  {
+    res.status(500).json({ error: error.message });
+  } finally
+  {
+    await client.close();
+  }
 };
 
-exports.deleteProduct = (req, res) =>
+exports.updateProduct = async (req, res) =>
 {
-  const index = store.products.findIndex(p => p.id === parseInt(req.params.id));
-  if (index === -1) return res.status(404).json({ error: "Non trouvé" });
-  store.products.splice(index, 1);
-  res.status(204).send();
+  try
+  {
+    await client.connect();
+    const database = client.db("ecommerce");
+    const products = database.collection("products");
+    const result = await products.updateOne(
+      { _id: parseInt(req.params.id) },
+      { $set: req.body }
+    );
+    if (result.matchedCount === 0)
+    {
+      return res.status(404).json({ error: "Non trouvé" });
+    }
+    res.json({ message: "Produit mis à jour avec succès" });
+  } catch (error)
+  {
+    res.status(500).json({ error: error.message });
+  } finally
+  {
+    await client.close();
+  }
+};
+
+exports.deleteProduct = async (req, res) =>
+{
+  try
+  {
+    await client.connect();
+    const database = client.db("ecommerce");
+    const products = database.collection("products");
+    const result = await products.deleteOne({ _id: parseInt(req.params.id) });
+    if (result.deletedCount === 0)
+    {
+      return res.status(404).json({ error: "Non trouvé" });
+    }
+    res.status(204).send();
+  } catch (error)
+  {
+    res.status(500).json({ error: error.message });
+  } finally
+  {
+    await client.close();
+  }
 };
